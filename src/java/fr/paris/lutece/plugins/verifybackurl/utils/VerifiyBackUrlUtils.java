@@ -36,10 +36,15 @@ package fr.paris.lutece.plugins.verifybackurl.utils;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.http.AntPathMatcher;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +55,11 @@ public class VerifiyBackUrlUtils
 {
     
     public final static AntPathMatcher PATH_MATCHER = new AntPathMatcher( );
+    private static final String SCHEME_SEPARATOR = "://";
+    private static final String ANY_TEXT = "**";
+    private static final Pattern HOST_PATTERN_END = Pattern.compile( "[/?#]" );
+    private static final Pattern HOST_PATTERN_ANY_START = Pattern.compile( "^\\*\\*[a-zA-Z0-9]" );
+    private static final String HOST_NAME_CHARACTERS = "[a-z0-9.-]+";
     
     /**
      * Test if the BacUrl is a valid url
@@ -72,7 +82,7 @@ public class VerifiyBackUrlUtils
 
             for ( int i = 0; i < tabAuthorizedDomains.length; i++ )
             {
-                if ( PATH_MATCHER.match( tabAuthorizedDomains [i], strBackUrl ) )
+                if ( matchAuthorizedPattern( tabAuthorizedDomains [i], strBackUrl ) )
                 {
                     isValid = true;
 
@@ -84,6 +94,68 @@ public class VerifiyBackUrlUtils
         return isValid;
     }
     
+    /**
+     * Test if the back url matches an authorized pattern: the whole url matches the pattern, and the host of the url, read by
+     * {@link URI}, matches exactly the host of the pattern. In the host of a pattern, a {@code *} stands for one or more characters
+     * of a host name, and the {@code **} at its start or end (any text before or after the host in the url) as well as the port are
+     * ignored: {@code http*://**localhost**} matches the host localhost only, {@code http*://*.paris.mdp/**} the subdomains of
+     * paris.mdp only.
+     * 
+     * @param strPattern
+     *            the authorized pattern
+     * @param strBackUrl
+     *            the back url to test
+     * @return true if the back url matches the pattern
+     */
+    public static boolean matchAuthorizedPattern( String strPattern, String strBackUrl )
+    {
+        if ( !PATH_MATCHER.match( strPattern, strBackUrl ) )
+        {
+            return false;
+        }
+        int nHostStart = strPattern.indexOf( SCHEME_SEPARATOR );
+        if ( nHostStart < 0 )
+        {
+            // A pattern without host, such as a relative path
+            return true;
+        }
+        String strHostPattern = strPattern.substring( nHostStart + SCHEME_SEPARATOR.length( ) );
+        Matcher matcherEnd = HOST_PATTERN_END.matcher( strHostPattern );
+        if ( matcherEnd.find( ) )
+        {
+            strHostPattern = strHostPattern.substring( 0, matcherEnd.start( ) );
+        }
+        strHostPattern = StringUtils.substringBefore( StringUtils.removeEnd( strHostPattern, ANY_TEXT ), ":" );
+        if ( HOST_PATTERN_ANY_START.matcher( strHostPattern ).find( ) )
+        {
+            // **localhost: the text before the host in the url, not a part of the host
+            strHostPattern = strHostPattern.substring( ANY_TEXT.length( ) );
+        }
+
+        String strHost;
+        try
+        {
+            strHost = new URI( strBackUrl ).getHost( );
+        }
+        catch( URISyntaxException e )
+        {
+            return false;
+        }
+        if ( StringUtils.isEmpty( strHost ) )
+        {
+            return false;
+        }
+        if ( strHostPattern.isEmpty( ) )
+        {
+            // http*://** sets no host
+            return true;
+        }
+
+        String strRegex = Arrays.stream( strHostPattern.toLowerCase( Locale.ROOT ).split( "\\*+", -1 ) ).map( Pattern::quote )
+                .collect( Collectors.joining( HOST_NAME_CHARACTERS ) );
+        return strHost.toLowerCase( Locale.ROOT ).matches( strRegex );
+    }
+
     /**
      * Test if the BacUrl is a valid url
      * 
