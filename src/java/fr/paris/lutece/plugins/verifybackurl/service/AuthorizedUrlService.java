@@ -155,7 +155,7 @@ public class AuthorizedUrlService
      */
     public String getServiceBackUrl(HttpServletRequest request,String strBackUrlParameter)
     {   	
-    	return getServiceBackUrl(request, VerifyBackUrlConstants.PARAMETER_BACK_URL,VerifyBackUrlConstants.SESSION_ATTRIBUTE_BACK_URL);
+    	return getServiceBackUrl(request, strBackUrlParameter,VerifyBackUrlConstants.SESSION_ATTRIBUTE_BACK_URL);
     }
     
     
