@@ -41,6 +41,18 @@
 			<artifactId>jaxb-runtime</artifactId>
 			<scope>test</scope>
 		</dependency>
+        <!-- jakarta bean validation, for the controller tests -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- the validation above needs some EL impl -->
+        <dependency>
+            <groupId>org.glassfish.expressly</groupId>
+            <artifactId>expressly</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <scm>

@@ -37,6 +37,7 @@ import fr.paris.lutece.plugins.verifybackurl.business.AuthorizedUrl;
 import fr.paris.lutece.plugins.verifybackurl.business.AuthorizedUrlHome;
 import fr.paris.lutece.portal.service.message.AdminMessage;
 import fr.paris.lutece.portal.service.message.AdminMessageService;
+import fr.paris.lutece.portal.service.security.SecurityTokenHandler;
 import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.portal.util.mvc.admin.MVCAdminJspBean;
@@ -50,7 +51,9 @@ import fr.paris.lutece.portal.web.util.IPager;
 import fr.paris.lutece.portal.web.util.Pager;
 import fr.paris.lutece.util.url.UrlItem;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -95,13 +98,13 @@ public class AuthorizedUrlJspBean extends MVCAdminJspBean
     private static final String VIEW_MANAGE_AUTHORIZEDURLS = "manageAuthorizedUrls";
     private static final String VIEW_CREATE_AUTHORIZEDURL = "createAuthorizedUrl";
     private static final String VIEW_MODIFY_AUTHORIZEDURL = "modifyAuthorizedUrl";
+    private static final String VIEW_GET_AUTHORIZEDURL_ITEMS = "getAuthorizedUrlItems";
+    private static final String VIEW_CONFIRM_REMOVE_AUTHORIZEDURL = "confirmRemoveAuthorizedUrl";
 
     // Actions
-    private static final String ACTION_GET_AUTHORIZEDURL_ITEMS = "getAuthorizedUrlItems";
     private static final String ACTION_CREATE_AUTHORIZEDURL = "createAuthorizedUrl";
     private static final String ACTION_MODIFY_AUTHORIZEDURL = "modifyAuthorizedUrl";
     private static final String ACTION_REMOVE_AUTHORIZEDURL = "removeAuthorizedUrl";
-    private static final String ACTION_CONFIRM_REMOVE_AUTHORIZEDURL = "confirmRemoveAuthorizedUrl";
 
     // Infos
     private static final String INFO_AUTHORIZEDURL_CREATED = "verifybackurl.info.authorizedurl.created";
@@ -135,13 +138,14 @@ public class AuthorizedUrlJspBean extends MVCAdminJspBean
     }
 
     /**
-     * Retrieves a paginated list of style items for the specified page number.
+     * Retrieves a paginated list of authorized URLs for the specified page number. A read-only view, so that the list loaded by the
+     * page with GET needs no security token.
      *
      * @param numPage The page number to retrieve.
-     * @return A list of style items for the specified page.
+     * @return A list of authorized URLs for the specified page.
      */
-    @Action( value = ACTION_GET_AUTHORIZEDURL_ITEMS )
-	@ResponseBody
+    @View( VIEW_GET_AUTHORIZEDURL_ITEMS )
+    @ResponseBody
     public List<AuthorizedUrl> getAuthorizedUrlItems( @RequestParam("page") int numPage )
     {
     	return pager.getPaginator( ).get( ).getPageItems( numPage );
@@ -185,19 +189,22 @@ public class AuthorizedUrlJspBean extends MVCAdminJspBean
 
     /**
      * Manages the removal form of a authorizedurl whose identifier is in the http
-     * request
+     * request. A view opened by a link: the confirmation form posts the removal with the security token of the removal action.
      *
      * @param request The Http request
      * @return the html code to confirm
      */
-    @Action( value = ACTION_CONFIRM_REMOVE_AUTHORIZEDURL, securityTokenAction = ACTION_REMOVE_AUTHORIZEDURL )
+    @View( VIEW_CONFIRM_REMOVE_AUTHORIZEDURL )
     public String getConfirmRemoveAuthorizedUrl( HttpServletRequest request )
     {
         int nId = Integer.parseInt( request.getParameter( PARAMETER_ID_AUTHORIZEDURL ) );
         UrlItem url = new UrlItem( getActionUrl( ACTION_REMOVE_AUTHORIZEDURL ) );
         url.addParameter( PARAMETER_ID_AUTHORIZEDURL, nId );
 
-        String strMessageUrl = AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE_AUTHORIZEDURL, null, null, url.getUrl(  ), null, AdminMessage.TYPE_CONFIRMATION, null, JSP_MANAGE_AUTHORIZEDURLS );
+        Map<String, Object> mapParameters = new HashMap<>( );
+        mapParameters.put( SecurityTokenHandler.MARK_CSRF_TOKEN, getSecurityTokenService( ).getToken( request, ACTION_REMOVE_AUTHORIZEDURL ) );
+
+        String strMessageUrl = AdminMessageService.getMessageUrl( request, MESSAGE_CONFIRM_REMOVE_AUTHORIZEDURL, null, null, url.getUrl(  ), null, AdminMessage.TYPE_CONFIRMATION, mapParameters, JSP_MANAGE_AUTHORIZEDURLS );
 
         return redirect( request, strMessageUrl );
     }

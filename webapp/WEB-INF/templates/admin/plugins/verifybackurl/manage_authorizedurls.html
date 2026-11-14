@@ -24,7 +24,7 @@
 	          "btnClass": "btn-primary btn-sm"
 	        },
 	          "delete": {
-	          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?action=confirmRemoveAuthorizedUrl&id={id}",
+	          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=confirmRemoveAuthorizedUrl&id={id}",
 	          "icon": "trash",
 	          "title": "#i18n{portal.util.labelDelete}",
 	          "btnClass": "btn-danger btn-sm",
@@ -37,7 +37,7 @@
             <@paginationAjax 
                 paginator=paginator 
                 columns=authorizedurlColumns
-                ajaxUrl="jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?action=getAuthorizedUrlItems"
+                ajaxUrl="jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=getAuthorizedUrlItems"
                 tableId="authorizedUrlsTable"
                 combo=1
                 showcount=0
