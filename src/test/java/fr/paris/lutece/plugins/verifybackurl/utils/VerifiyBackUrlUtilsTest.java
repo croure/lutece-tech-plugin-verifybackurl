@@ -80,4 +80,32 @@ public class VerifiyBackUrlUtilsTest
         assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN_PATH, "ftp://site.paris.mdp/a" ) );
         assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN_PATH, "http://site.paris.mdp/a b" ) );
     }
+
+    @Test
+    public void testUrlsWithPath( )
+    {
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://localhost/" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://localhost:8080/app/page" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "https://localhost:8443/lutece/jsp/site/Portal.jsp?page=x#top" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN_PATH, "http://site.paris.mdp" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://localhost:8080/lutece/**", "http://localhost:8080/lutece/jsp/site/Portal.jsp" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://localhost.example.org/app/page" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://example.org/localhost/page" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN, "http://site.paris.mdp/a" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN, "http://site.paris.mdp:8080" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://localhost:8080/lutece/**", "http://localhost:9090/lutece/jsp/site/Portal.jsp" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://localhost:8080/lutece/**", "http://localhost:8080/other/jsp/site/Portal.jsp" ) );
+    }
+
+    @Test
+    public void testHostCaseInsensitive( )
+    {
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://LOCALHOST:8080" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN, "http://Site.Paris.MDP" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_DOMAIN_PATH, "HTTPS://WWW.SITE.PARIS.MDP/a/b" ) );
+        assertTrue( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://*.Paris.Mdp/**", "http://site.paris.mdp/a" ) );
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( PATTERN_LOCALHOST, "http://LOCALHOST.example.org" ) );
+        // The path stays case-sensitive
+        assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://*.paris.mdp/lutece/**", "http://site.paris.mdp/LUTECE/jsp" ) );
+    }
 }

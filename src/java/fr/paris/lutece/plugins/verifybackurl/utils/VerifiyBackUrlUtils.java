@@ -60,6 +60,9 @@ public class VerifiyBackUrlUtils
     private static final Pattern HOST_PATTERN_END = Pattern.compile( "[/?#]" );
     private static final Pattern HOST_PATTERN_ANY_START = Pattern.compile( "^\\*\\*[a-zA-Z0-9]" );
     private static final String HOST_NAME_CHARACTERS = "[a-z0-9.-]+";
+    private static final String PORT_CHARACTERS = "[0-9]+";
+    private static final String PORT_SEPARATOR = ":";
+    private static final String PATH_SEPARATOR = "/";
     
     /**
      * Test if the BacUrl is a valid url
@@ -95,11 +98,17 @@ public class VerifiyBackUrlUtils
     }
     
     /**
-     * Test if the back url matches an authorized pattern: the whole url matches the pattern, and the host of the url, read by
-     * {@link URI}, matches exactly the host of the pattern. In the host of a pattern, a {@code *} stands for one or more characters
-     * of a host name, and the {@code **} at its start or end (any text before or after the host in the url) as well as the port are
-     * ignored: {@code http*://**localhost**} matches the host localhost only, {@code http*://*.paris.mdp/**} the subdomains of
-     * paris.mdp only.
+     * Test if the back url matches an authorized pattern {@code scheme://host[:port][path]}, each part of the url, read by {@link URI},
+     * against the same part of the pattern:
+     * <ul>
+     * <li>the scheme and the host are compared without case; in the host of a pattern, a {@code *} stands for one or more characters
+     * of a host name, and a {@code **} at its start (any text before the host) is ignored: the host must match exactly;</li>
+     * <li>a {@code **} at the end of the host of a pattern accepts any port and any path: {@code http*://**localhost**} matches the
+     * host localhost only, with or without port and path;</li>
+     * <li>otherwise the port must match the port of the pattern (no port when the pattern has none), and the path, with the query and
+     * the fragment, must match the path of the pattern (Ant matching, case-sensitive; nothing when the pattern has no path):
+     * {@code http*://*.paris.mdp/**} matches the subdomains of paris.mdp only, with any path.</li>
+     * </ul>
      * 
      * @param strPattern
      *            the authorized pattern
@@ -109,51 +118,85 @@ public class VerifiyBackUrlUtils
      */
     public static boolean matchAuthorizedPattern( String strPattern, String strBackUrl )
     {
-        if ( !PATH_MATCHER.match( strPattern, strBackUrl ) )
-        {
-            return false;
-        }
         int nHostStart = strPattern.indexOf( SCHEME_SEPARATOR );
         if ( nHostStart < 0 )
         {
             // A pattern without host, such as a relative path
-            return true;
-        }
-        String strHostPattern = strPattern.substring( nHostStart + SCHEME_SEPARATOR.length( ) );
-        Matcher matcherEnd = HOST_PATTERN_END.matcher( strHostPattern );
-        if ( matcherEnd.find( ) )
-        {
-            strHostPattern = strHostPattern.substring( 0, matcherEnd.start( ) );
-        }
-        strHostPattern = StringUtils.substringBefore( StringUtils.removeEnd( strHostPattern, ANY_TEXT ), ":" );
-        if ( HOST_PATTERN_ANY_START.matcher( strHostPattern ).find( ) )
-        {
-            // **localhost: the text before the host in the url, not a part of the host
-            strHostPattern = strHostPattern.substring( ANY_TEXT.length( ) );
+            return PATH_MATCHER.match( strPattern, strBackUrl );
         }
 
-        String strHost;
+        URI uri;
         try
         {
-            strHost = new URI( strBackUrl ).getHost( );
+            uri = new URI( strBackUrl );
         }
         catch( URISyntaxException e )
         {
             return false;
         }
-        if ( StringUtils.isEmpty( strHost ) )
+        if ( uri.getScheme( ) == null || StringUtils.isEmpty( uri.getHost( ) )
+                || !PATH_MATCHER.match( strPattern.substring( 0, nHostStart ).toLowerCase( Locale.ROOT ), uri.getScheme( ).toLowerCase( Locale.ROOT ) ) )
         {
             return false;
         }
-        if ( strHostPattern.isEmpty( ) )
+
+        String strAuthorityPattern = strPattern.substring( nHostStart + SCHEME_SEPARATOR.length( ) );
+        String strPathPattern = StringUtils.EMPTY;
+        Matcher matcherEnd = HOST_PATTERN_END.matcher( strAuthorityPattern );
+        if ( matcherEnd.find( ) )
         {
-            // http*://** sets no host
+            strPathPattern = strAuthorityPattern.substring( matcherEnd.start( ) );
+            strAuthorityPattern = strAuthorityPattern.substring( 0, matcherEnd.start( ) );
+        }
+        boolean bAnyPortAndPath = strAuthorityPattern.endsWith( ANY_TEXT );
+        strAuthorityPattern = StringUtils.removeEnd( strAuthorityPattern, ANY_TEXT );
+        if ( HOST_PATTERN_ANY_START.matcher( strAuthorityPattern ).find( ) )
+        {
+            // **localhost: the text before the host in the url, not a part of the host
+            strAuthorityPattern = strAuthorityPattern.substring( ANY_TEXT.length( ) );
+        }
+        String strHostPattern = StringUtils.substringBefore( strAuthorityPattern, PORT_SEPARATOR );
+
+        // http*://** sets no host
+        if ( !strHostPattern.isEmpty( ) && !uri.getHost( ).toLowerCase( Locale.ROOT )
+                .matches( toWildcardRegex( strHostPattern.toLowerCase( Locale.ROOT ), HOST_NAME_CHARACTERS ) ) )
+        {
+            return false;
+        }
+        if ( bAnyPortAndPath )
+        {
             return true;
         }
 
-        String strRegex = Arrays.stream( strHostPattern.toLowerCase( Locale.ROOT ).split( "\\*+", -1 ) ).map( Pattern::quote )
-                .collect( Collectors.joining( HOST_NAME_CHARACTERS ) );
-        return strHost.toLowerCase( Locale.ROOT ).matches( strRegex );
+        String strPort = ( uri.getPort( ) < 0 ) ? StringUtils.EMPTY : String.valueOf( uri.getPort( ) );
+        String strPortPattern = strAuthorityPattern.contains( PORT_SEPARATOR ) ? StringUtils.substringAfter( strAuthorityPattern, PORT_SEPARATOR )
+                : StringUtils.EMPTY;
+        if ( !strPort.matches( toWildcardRegex( strPortPattern, PORT_CHARACTERS ) ) )
+        {
+            return false;
+        }
+
+        String strPath = StringUtils.defaultString( uri.getRawPath( ) ) + ( ( uri.getRawQuery( ) == null ) ? StringUtils.EMPTY : "?" + uri.getRawQuery( ) )
+                + ( ( uri.getRawFragment( ) == null ) ? StringUtils.EMPTY : "#" + uri.getRawFragment( ) );
+        if ( strPathPattern.isEmpty( ) )
+        {
+            return strPath.isEmpty( );
+        }
+        return PATH_MATCHER.match( strPathPattern, strPath.isEmpty( ) ? PATH_SEPARATOR : strPath );
+    }
+
+    /**
+     * Build the regular expression of a pattern where a {@code *} stands for one or more given characters
+     * 
+     * @param strPattern
+     *            the pattern
+     * @param strCharacters
+     *            the regular expression of the characters a {@code *} stands for
+     * @return the regular expression
+     */
+    private static String toWildcardRegex( String strPattern, String strCharacters )
+    {
+        return Arrays.stream( strPattern.split( "\\*+", -1 ) ).map( Pattern::quote ).collect( Collectors.joining( strCharacters ) );
     }
 
     /**
