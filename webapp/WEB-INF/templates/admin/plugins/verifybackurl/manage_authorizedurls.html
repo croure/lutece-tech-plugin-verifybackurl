@@ -1,50 +1,55 @@
-<@row>
-	<@columns>
-		<@box>
-			<@boxHeader title='#i18n{verifybackurl.manage_authorizedurls.title}'>
-				<@tform method='post' name='manage_authorizedurl' action='jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp'>
-					<@button type='submit' name='view_createAuthorizedUrl' title='#i18n{verifybackurl.manage_authorizedurls.buttonAdd}' buttonIcon='plus-circle' size='sm' hideTitle=['xs','sm'] />
-				</@tform>
-			</@boxHeader>
-			<@boxBody>    
-			<@messages infos=infos />
-			
-			<#assign authorizedurlColumns = [
-	          {"name": "#i18n{verifybackurl.manage_authorizedurls.columnApplicationCode}", "property": "applicationCode", "sortable": false},
-			  {"name": "#i18n{verifybackurl.manage_authorizedurls.columnName}", "property": "name", "sortable": false},
-			  {"name": "#i18n{verifybackurl.manage_authorizedurls.columnUrl}", "property": "url", "sortable": false}
-	        ]>
-			
-			<#-- Définition des actions -->
-	        <#assign authorizedurlActions = {
-	          "edit": {
-	          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=modifyAuthorizedUrl&id={id}",
-	          "icon": "edit",
-	          "title": "#i18n{portal.util.labelModify}",
-	          "btnClass": "btn-primary btn-sm"
-	        },
-	          "delete": {
-	          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=confirmRemoveAuthorizedUrl&id={id}",
-	          "icon": "trash",
-	          "title": "#i18n{portal.util.labelDelete}",
-	          "btnClass": "btn-danger btn-sm",
-	          "confirm": "false"
-	        }
-	        }>
-	        
-	        <#-- Page complète avec navigation -->
-            <#-- Table avec pagination AJAX -->
-            <@paginationAjax 
-                paginator=paginator 
-                columns=authorizedurlColumns
-                ajaxUrl="jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=getAuthorizedUrlItems"
-                tableId="authorizedUrlsTable"
-                combo=1
-                showcount=0
-                actions=authorizedurlActions
-            />
-			
-			</@boxBody>
-		</@box>
-	</@columns>
-</@row>
+<@pageContainer>
+	<@pageColumn>
+		<@pageHeader title='#i18n{verifybackurl.manage_authorizedurls.pageTitle}' />
+		<@row>
+			<@columns>
+				<@box>
+					<@boxHeader title='#i18n{verifybackurl.manage_authorizedurls.title}'>
+						<@tform method='post' name='manage_authorizedurl' action='jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp'>
+							<@button type='submit' name='view_createAuthorizedUrl' title='#i18n{verifybackurl.manage_authorizedurls.buttonAdd}' buttonIcon='plus-circle' size='sm' hideTitle=['xs','sm'] />
+						</@tform>
+					</@boxHeader>
+					<@boxBody>    
+					<@messages infos=infos />
+					
+					<#assign authorizedurlColumns = [
+			          {"name": "#i18n{verifybackurl.manage_authorizedurls.columnApplicationCode}", "property": "applicationCode", "sortable": false},
+					  {"name": "#i18n{verifybackurl.manage_authorizedurls.columnName}", "property": "name", "sortable": false},
+					  {"name": "#i18n{verifybackurl.manage_authorizedurls.columnUrl}", "property": "url", "sortable": false}
+			        ]>
+					
+					<#-- Définition des actions -->
+			        <#assign authorizedurlActions = {
+			          "edit": {
+			          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=modifyAuthorizedUrl&id={id}",
+			          "icon": "edit",
+			          "title": "#i18n{portal.util.labelModify}",
+			          "btnClass": "btn-primary btn-sm"
+			        },
+			          "delete": {
+			          "url": "jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=confirmRemoveAuthorizedUrl&id={id}",
+			          "icon": "trash",
+			          "title": "#i18n{portal.util.labelDelete}",
+			          "btnClass": "btn-danger btn-sm",
+			          "confirm": "false"
+			        }
+			        }>
+			        
+			        <#-- Page complète avec navigation -->
+		            <#-- Table avec pagination AJAX -->
+		            <@paginationAjax 
+		                paginator=paginator 
+		                columns=authorizedurlColumns
+		                ajaxUrl="jsp/admin/plugins/verifybackurl/ManageAuthorizedUrls.jsp?view=getAuthorizedUrlItems"
+		                tableId="authorizedUrlsTable"
+		                combo=1
+		                showcount=0
+		                actions=authorizedurlActions
+		            />
+					
+					</@boxBody>
+				</@box>
+			</@columns>
+		</@row>
+	</@pageColumn>
+</@pageContainer>
