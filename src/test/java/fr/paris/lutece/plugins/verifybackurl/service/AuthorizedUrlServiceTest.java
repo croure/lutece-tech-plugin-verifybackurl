@@ -50,6 +50,7 @@ public class AuthorizedUrlServiceTest extends LuteceTestCase
     private static final String PARAMETER_CUSTOM = "custom_back_url";
     private static final String SESSION_CUSTOM = "custom_back_url_session";
     private static final String URL_AUTHORIZED = "http://site.paris.mdp";
+    private static final String URL_LOCALHOST = "http://localhost:8080/app/page";
 
     @Inject
     private AuthorizedUrlService _authorizedUrlService;
@@ -73,5 +74,14 @@ public class AuthorizedUrlServiceTest extends LuteceTestCase
 
         assertEquals( URL_AUTHORIZED, request.getSession( ).getAttribute( SESSION_CUSTOM ) );
         assertNull( request.getSession( ).getAttribute( "back_url" ) );
+    }
+
+    @Test
+    public void testGetServiceBackUrlWithLocalhost( )
+    {
+        MockHttpServletRequest request = new MockHttpServletRequest( );
+        request.addParameter( PARAMETER_CUSTOM, URL_LOCALHOST );
+
+        assertEquals( URL_LOCALHOST, _authorizedUrlService.getServiceBackUrl( request, PARAMETER_CUSTOM ) );
     }
 }

@@ -108,4 +108,19 @@ public class VerifiyBackUrlUtilsTest
         // The path stays case-sensitive
         assertFalse( VerifiyBackUrlUtils.matchAuthorizedPattern( "http*://*.paris.mdp/lutece/**", "http://site.paris.mdp/LUTECE/jsp" ) );
     }
+
+    @Test
+    public void testHostWithoutDotNamedByPattern( )
+    {
+        String [ ] patterns = { PATTERN_LOCALHOST, PATTERN_DOMAIN_PATH };
+        assertTrue( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( patterns, "http://localhost:8080/app" ) );
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( patterns, "http://intranet/app" ) );
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( patterns, "http://site.paris.mdp/a" ) );
+        // A pattern that accepts any host does not name a host
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( new String [ ] { "http*://**" }, "http://intranet/app" ) );
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( new String [ ] { "http*://*" }, "http://intranet" ) );
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( new String [ ] { "http*://local*" }, "http://localhost" ) );
+        // The rest of the url must match the pattern too
+        assertFalse( VerifiyBackUrlUtils.isHostWithoutDotNamedByPattern( new String [ ] { "http*://localhost/lutece/**" }, "http://localhost/other" ) );
+    }
 }

@@ -186,6 +186,74 @@ public class VerifiyBackUrlUtils
     }
 
     /**
+     * Test if the host of the back url has no dot (such as localhost) and is named by an authorized pattern
+     * 
+     * @param strBackUrl
+     *            the back url to test
+     * @return true if the host of the back url has no dot and an authorized pattern names it
+     */
+    public static boolean isHostWithoutDotNamedByAuthorizedPattern( String strBackUrl )
+    {
+        String strAuthorizedDomains = AppPropertiesService.getProperty( VerifyBackUrlConstants.PROPERTY_AUTHORIZED_DOMAINS_BACK_URL );
+
+        return !StringUtils.isEmpty( strAuthorizedDomains )
+                && isHostWithoutDotNamedByPattern( strAuthorizedDomains.split( VerifyBackUrlConstants.COMMA ), strBackUrl );
+    }
+
+    /**
+     * Test if the host of the back url has no dot (such as localhost) and is named by one of the patterns: the host of the pattern is
+     * this host written without {@code *}, and the back url matches the pattern. A pattern that accepts any host does not name it.
+     * 
+     * @param patterns
+     *            the authorized patterns
+     * @param strBackUrl
+     *            the back url to test
+     * @return true if the host of the back url has no dot and a pattern names it
+     */
+    static boolean isHostWithoutDotNamedByPattern( String [ ] patterns, String strBackUrl )
+    {
+        String strHost;
+        try
+        {
+            strHost = new URI( strBackUrl ).getHost( );
+        }
+        catch( URISyntaxException e )
+        {
+            return false;
+        }
+        if ( StringUtils.isEmpty( strHost ) || strHost.contains( "." ) )
+        {
+            return false;
+        }
+
+        for ( String strPattern : patterns )
+        {
+            int nHostStart = strPattern.indexOf( SCHEME_SEPARATOR );
+            if ( nHostStart < 0 )
+            {
+                continue;
+            }
+            String strHostPattern = strPattern.substring( nHostStart + SCHEME_SEPARATOR.length( ) );
+            Matcher matcherEnd = HOST_PATTERN_END.matcher( strHostPattern );
+            if ( matcherEnd.find( ) )
+            {
+                strHostPattern = strHostPattern.substring( 0, matcherEnd.start( ) );
+            }
+            strHostPattern = StringUtils.removeEnd( strHostPattern, ANY_TEXT );
+            if ( HOST_PATTERN_ANY_START.matcher( strHostPattern ).find( ) )
+            {
+                strHostPattern = strHostPattern.substring( ANY_TEXT.length( ) );
+            }
+            strHostPattern = StringUtils.substringBefore( strHostPattern, PORT_SEPARATOR );
+            if ( strHostPattern.equalsIgnoreCase( strHost ) && matchAuthorizedPattern( strPattern, strBackUrl ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Build the regular expression of a pattern where a {@code *} stands for one or more given characters
      * 
      * @param strPattern

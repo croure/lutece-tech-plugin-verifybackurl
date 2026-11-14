@@ -50,6 +50,7 @@ public class CharactersDomainConstraint implements IBackUrlConstraint
     @Override
     public boolean checkConstraint ( String url )
     {
-        return VerifiyBackUrlUtils.containsUnauthorizedCharactersDomain( url );
+        // A host without a dot, such as localhost, only when an authorized pattern names it
+        return VerifiyBackUrlUtils.containsUnauthorizedCharactersDomain( url ) || VerifiyBackUrlUtils.isHostWithoutDotNamedByAuthorizedPattern( url );
     }  
 }
