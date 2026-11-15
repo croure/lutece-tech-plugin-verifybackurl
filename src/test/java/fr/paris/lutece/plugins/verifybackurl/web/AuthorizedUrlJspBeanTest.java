@@ -35,6 +35,9 @@ package fr.paris.lutece.plugins.verifybackurl.web;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import fr.paris.lutece.plugins.verifybackurl.business.AuthorizedUrl;
 import fr.paris.lutece.plugins.verifybackurl.business.AuthorizedUrlHome;
 import fr.paris.lutece.portal.business.user.AdminUser;
@@ -97,8 +100,18 @@ public class AuthorizedUrlJspBeanTest extends LuteceTestCase
             assertTrue( _securityTokenHandler.shouldNotFilter( request ), "The list loaded with GET must not need a security token" );
 
             MockHttpServletResponse response = new MockHttpServletResponse( );
-            assertNull( _instance.processController( request, response ) );
-            assertTrue( response.getContentAsString( ).contains( authorizedUrl.getUrl( ) ), response.getContentAsString( ) );
+            assertNull( _instance.processController( request, response ), "The JSON view writes the response itself: the JSP must add nothing" );
+
+            // The whole body must be one JSON document (the paginationAjax table parses it with JSON.parse)
+            String strBody = response.getContentAsString( );
+            JsonNode items = new ObjectMapper( ).readTree( strBody );
+            assertTrue( items.isArray( ), strBody );
+            boolean bFound = false;
+            for ( JsonNode item : items )
+            {
+                bFound |= authorizedUrl.getUrl( ).equals( item.path( "url" ).asText( ) );
+            }
+            assertTrue( bFound, strBody );
         }
         finally
         {
